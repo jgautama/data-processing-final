@@ -25,7 +25,7 @@ the output file name is located in the newly generated `target/` folder with the
 Next, upload the file to your S3 bucket. you can use AWS CLI or sign in to your AWS console and upload
 via the GUI.
 ```shell
-aws s3 cp s3://<bucket_name>/<artifact_id>-<version>  target/<artifact_id>-<version>.jar
+aws s3 cp target/<artifact_id>-<version>.jar s3://<bucket_name>/<artifact_id>-<version>.jar
 ```
 
 TODO: add instructions below to setup EMR Steps
