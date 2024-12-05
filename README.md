@@ -75,7 +75,7 @@ The current downloaded file has the following columns:
 | 11 | DEP_DELAY_GROUP   | 23 | DIVERTED          |    |                     |
 
 As for the `ORIGIN_AIRPORT_ID` and `DEST_AIRPORT_ID`, we need a lookup table that maps to the airport name.
-This can be found at [./data-lookup-table/](data-lookup-table). 
+This can be found at [resources](src/main/resources/) folder. 
 
 ## Sample Output
 [Current Output](./output/part-r-00000.txt) 
