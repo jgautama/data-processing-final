@@ -58,7 +58,7 @@ public class FlightAnalysis {
   }
 
   // Reducer class that computes new centroids and outputs data points with cluster IDs
-  public static class FlightReducer extends Reducer<IntWritable, Text, Text, Text> {
+  public static class FlightReducer extends Reducer<IntWritable, Text, Text, IntWritable> {
     private List<Double> newCentroids = new ArrayList<>();
     private List<Double> oldCentroids = new ArrayList<>();
 
@@ -71,55 +71,53 @@ public class FlightAnalysis {
       }
     }
 
-    // Reduce function to calculate the new centroids for each cluster
     @Override
-    protected void reduce(IntWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-      double sum = 0.0;
+    public void reduce(IntWritable key, Iterable<Text> values, Context context)
+        throws IOException, InterruptedException {
+      List<Double> clusterData = new ArrayList<>();
+      double sum = 0;
       int count = 0;
+      String carrier = "";
 
-      // Sum up all the DEP_DELAY values for the current cluster
-      for (Text value : values) {
-        String[] columns = value.toString().split(",");
-        double depDelay = Double.parseDouble(columns[9]); // DEP_DELAY is column 9
+      // Iterate over all values (data points) for the current key (cluster ID)
+      for (Text val : values) {
+        String[] columns = val.toString().split(",");
+        carrier = columns[4]; // OP_UNIQUE_CARRIER at index 4
+        double depDelay = Double.parseDouble(columns[9]); // DEP_DELAY at index 9
+
+        // Add the DEP_DELAY to the sum
         sum += depDelay;
         count++;
+
+        // Add the carrier and depDelay to the cluster data for final output
+        // String carrierDepDelayKey = carrier + "-" + depDelay;  // OP_UNIQUE_CARRIER-DEP_DELAY format
+        clusterData.add(depDelay);
       }
 
-      // Calculate the new centroid (average of the data points in the cluster)
-      double newCentroid = count == 0 ? 0.0 : sum / count;
-      newCentroids.add(newCentroid); // Store the new centroid
+      // Calculate the new centroid for the cluster
+      double newCentroid = sum / count;
 
-      // Output the data point along with the cluster ID
-      for (Text value : values) {
-        context.write(new Text(value.toString()), new Text(String.valueOf(key.get())));
-      }
-    }
-
-    // Cleanup method to check if the centroids have stabilized
-    @Override
-    protected void cleanup(Context context) throws IOException, InterruptedException {
-      Configuration conf = context.getConfiguration();
-      boolean centroidsChanged = false;
-
-      // Compare new centroids with old centroids to check for stabilization
-      for (int i = 0; i < oldCentroids.size(); i++) {
-        if (!oldCentroids.get(i).equals(newCentroids.get(i))) {
-          centroidsChanged = true; // If any centroid has changed, mark as changed
-          break;
-        }
-      }
-
-      // If centroids have changed, update them in the configuration for the next iteration
-      if (centroidsChanged) {
-        for (int i = 0; i < newCentroids.size(); i++) {
-          conf.set("centroid." + i, String.valueOf(newCentroids.get(i))); // Save updated centroids
-        }
-      }
-
-      // Output the final centroids as the last line in the output
+      // Determine the cluster ID based on the closest centroid (0, 1, or 2)
+      int clusterId = 0;
+      double minDistance = Double.MAX_VALUE;
       for (int i = 0; i < newCentroids.size(); i++) {
-        context.write(new Text("Final Centroid " + i), new Text(String.valueOf(newCentroids.get(i))));
+        double centroid = newCentroids.get(i);
+        double distance = Math.abs(newCentroid - centroid); // Default Euclidean distance
+        if (distance < minDistance) {
+          minDistance = distance;
+          clusterId = i;
+        }
       }
+
+      // Write the final output: key is OP_UNIQUE_CARRIER-DEP_DELAY, value is the cluster ID (as IntWritable)
+      // Using the first data point's carrier-DEP_DELAY key from the clusterData
+      if (!clusterData.isEmpty()) {
+        String carrierDepDelayKey = carrier + "-" + clusterData.get(0); // OP_UNIQUE_CARRIER-DEP_DELAY format
+        context.write(new Text(carrierDepDelayKey), new IntWritable(clusterId)); // Emit carrier and depDelay as key, clusterId as value
+      }
+
+      // Update the centroids with the new centroid for the next iteration
+      newCentroids.add(newCentroid);
     }
   }
 
@@ -147,8 +145,8 @@ public class FlightAnalysis {
     job.setMapOutputValueClass(Text.class);
 
     // Set output key and value types for the reduce phase
-    job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(Text.class);
+    job.setOutputKeyClass(Text.class);  // Key is OP_UNIQUE_CARRIER-DEP_DELAY (Text)
+    job.setOutputValueClass(IntWritable.class); // Value is the cluster ID (IntWritable)
 
     // Set input and output paths for the job (provided as command-line arguments)
     FileInputFormat.addInputPath(job, new Path(args[0]));
