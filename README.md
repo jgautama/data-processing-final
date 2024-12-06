@@ -75,22 +75,49 @@ The current downloaded file has the following columns:
 | 11 | DEP_DELAY_GROUP   | 23 | DIVERTED          |    |                     |
 
 As for the `ORIGIN_AIRPORT_ID` and `DEST_AIRPORT_ID`, we need a lookup table that maps to the airport name.
-This can be found at [./data-lookup-table/](data-lookup-table). 
+This can be found at [resources](src/main/resources/) folder. 
 
 ## Sample Output
-[Current Output](./output/part-r-00000.txt) 
-```text
-Current Output format: <Year>-<Month>/<ORIGIN_AIRPORT_ID>-<DEST_AIRPORT_ID>  <count>
-2023-1/10135-10397	1
-2023-1/10146-10397	2
-2023-1/10185-10397	2
-2023-1/10208-10397	1
-2023-1/10257-11433	2
-2023-1/10257-12953	1
-2023-1/10397-10135	1
-2023-1/10397-10146	2
-2023-1/10397-10185	2
-2023-1/10397-10208	2
-2023-1/10397-10731	2
-2023-1/10397-10781	2
+
+### version 0.2.3
+[refer to output for version 0.2.3](./output/depDelay-and-airTime-v0.2.3)
 ```
+// version 0.2.3
+//Output format: <OP_UNIQUE_CARRIER>-<DEP_DELAY>-<AIR_TIME>   <clusterID>
+//note: negative value for DEP_DELAY value means the airline arrives early / ahead of schedule.
+// TODO | negative AIR_TIME value is currently not know why it is negative.
+YX--10.0--1.0	0
+YX--8.0--1.0	0
+YX-25.0-1.0	0
+YX--2.0--1.0	0
+YX--10.0--1.0	0
+YX--9.0--1.0	0
+YX-8.0-0.0	0
+F9-99.0-6.0	1
+B6-82.0-5.0	1
+WN-136.0-9.0	1
+AA-185.0-12.0	1
+OO-107.0-7.0	1
+NK-76.0-5.0	1
+AA-135.0-9.0	1
+NK-171.0-11.0	1
+```
+### version 0.2.2
+[refer to output for version 0.2.2](./output/depDelay-v0.2.2)
+```text
+// version 0.2.2
+//Output format: <OP_UNIQUE_CARRIER>-<DEP_DELAY>   <clusterID>
+//note: negative value for DEP_DELAY value means the airline arrives early / ahead of schedule.
+YX,-10.00,0
+YX,-8.00,0
+YX,25.00,0
+YX,-2.00,0
+YX,-10.00,0
+YX,-9.00,0
+YX,8.00,0
+YX,-4.00,0
+YX,42.00,0
+YX,-8.00,0
+...
+```
+
